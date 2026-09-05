@@ -13,6 +13,8 @@
     const QUICK_TABS_CLOSE_SOURCE_TAB_PREF = "extensions.quicktabs.closeSourceTab";
     const QUICK_TABS_CMD_PALETTE_DYNAMIC_PREF = "extensions.quicktabs.commandpalette.dynamic.enabled";
     const QUICK_TABS_INITIAL_POSITION_PREF = "extensions.quicktabs.initialPosition";
+    const QUICK_TABS_BORDER_RADIUS_PREF = "extensions.quicktabs.borderRadius";
+    const QUICK_TABS_BUTTON_BORDER_RADIUS_PREF = "extensions.quicktabs.buttonBorderRadius";
 
     // Configuration helper functions
     const getPref = (prefName, defaultValue = "") => {
@@ -60,6 +62,19 @@
     const ANIMATIONS_ENABLED = getPref(QUICK_TABS_ANIMATIONS_ENABLED_PREF, true);
     const CLOSE_SOURCE_TAB = getPref(QUICK_TABS_CLOSE_SOURCE_TAB_PREF, false);
     const INITIAL_POSITION = getPref(QUICK_TABS_INITIAL_POSITION_PREF, "center"); // e.g., center, top-left, bottom-right
+
+    const parseRadius = (val, defaultVal) => {
+        if (val === undefined || val === null || val === '') return `${defaultVal}px`;
+        const str = String(val).trim();
+        if (str === '') return `${defaultVal}px`;
+        return isNaN(str) ? str : `${str}px`;
+    };
+
+    const BORDER_RADIUS = parseRadius(getPref(QUICK_TABS_BORDER_RADIUS_PREF, "8"), 8);
+    const rawButtonRadius = getPref(QUICK_TABS_BUTTON_BORDER_RADIUS_PREF, "");
+    const BUTTON_BORDER_RADIUS = rawButtonRadius !== "" 
+        ? parseRadius(rawButtonRadius, 4) 
+        : parseRadius(Math.max(2, Math.round(parseFloat(BORDER_RADIUS) / 2)) || 4, 4);
     
     // Global state
     let quickTabContainers = new Map(); // id -> container info
@@ -256,7 +271,7 @@
                 max-height: 80vh;
                 background-color: ${currentTheme.containerBg};
                 border: 1px solid ${currentTheme.containerBorder};
-                border-radius: 8px;
+                border-radius: ${BORDER_RADIUS};
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
                 z-index: 10000;
                 display: flex;
@@ -287,7 +302,7 @@
                 color: ${currentTheme.headerColor};
                 cursor: grab;
                 user-select: none;
-                border-radius: 8px 8px 0 0;
+                border-radius: ${BORDER_RADIUS} ${BORDER_RADIUS} 0 0;
                 min-height: 36px;
             }
 
@@ -319,7 +334,7 @@
                 background-color: ${currentTheme.containerBg};
                 color: ${currentTheme.headerColor};
                 padding: 2px 4px;
-                border-radius: 3px;
+                border-radius: ${BUTTON_BORDER_RADIUS};
                 margin: 0;
                 min-width: 0;
             }
@@ -328,7 +343,7 @@
                 width: 26px;
                 height: 26px;
                 border: none;
-                border-radius: 4px;
+                border-radius: ${BUTTON_BORDER_RADIUS};
                 background-color: ${currentTheme.buttonBg};
                 color: ${currentTheme.headerColor};
                 cursor: pointer;
@@ -671,6 +686,16 @@
         forwardButton.appendChild(forwardIcon);
         forwardButton.title = 'Forward';
 
+        const reloadButton = document.createElement('button');
+        reloadButton.className = 'quicktab-button';
+        const reloadIcon = document.createElement('img');
+        reloadIcon.src = 'chrome://global/skin/icons/reload.svg';
+        reloadIcon.width = 14;
+        reloadIcon.height = 14;
+        reloadIcon.alt = 'Reload';
+        reloadButton.appendChild(reloadIcon);
+        reloadButton.title = 'Reload';
+
         const openInTabButton = document.createElement('button');
         openInTabButton.className = 'quicktab-button';
         const openInTabIcon = document.createElement('img');
@@ -712,6 +737,7 @@
         buttonGroup.className = 'quicktab-button-group';
         buttonGroup.appendChild(backButton);
         buttonGroup.appendChild(forwardButton);
+        buttonGroup.appendChild(reloadButton);
         buttonGroup.appendChild(openInTabButton);
         buttonGroup.appendChild(minimizeButton);
         buttonGroup.appendChild(closeButton);
@@ -795,7 +821,10 @@
             titleElement: titleElement,
             backButton: backButton,
             forwardButton: forwardButton,
+            reloadButton: reloadButton,
             openInTabButton: openInTabButton,
+            minimizeButton: minimizeButton,
+            closeButton: closeButton,
             minimized: false,
             customTitle: false
         };
@@ -1059,11 +1088,8 @@
 
     // Setup container event listeners
     function setupContainerEvents(containerInfo) {
-        const { element, titleElement, browser, backButton, forwardButton, openInTabButton } = containerInfo;
+        const { element, titleElement, browser, backButton, forwardButton, reloadButton, openInTabButton, minimizeButton, closeButton } = containerInfo;
         const header = element.querySelector('.quicktab-header');
-        const allButtons = element.querySelectorAll('.quicktab-button');
-        const minimizeButton = allButtons[3]; // Back, Forward, OpenInTab, Minimize, Close
-        const closeButton = allButtons[4];
         const resizeHandle = element.querySelector('.quicktab-resize-handle');
 
         // Double-click to rename title
@@ -1117,9 +1143,10 @@
         header.addEventListener('mousedown', (e) => {
             if (e.target.classList.contains('quicktab-title-editor')) return;
 
-            if (e.target === backButton || e.target === forwardButton || 
-                e.target === openInTabButton || e.target === minimizeButton || 
-                e.target === closeButton) return;
+            if (e.target.closest('.quicktab-button') ||
+                e.target === backButton || e.target === forwardButton || 
+                e.target === reloadButton || e.target === openInTabButton || 
+                e.target === minimizeButton || e.target === closeButton) return;
             
             isDragging = true;
             dragStartX = e.clientX;
@@ -1259,6 +1286,57 @@
                     navigationSuccessful = true;
                 } catch (err) {
                     console.warn('QuickTabs: browser.goForward() failed:', err);
+                }
+            }
+        });
+
+        reloadButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            let reloadSuccessful = false;
+            
+            // Method 1: Try webNavigation.reload()
+            if (!reloadSuccessful && browser.webNavigation) {
+                try {
+                    const reloadFlags = e.shiftKey
+                        ? (Ci.nsIWebNavigation?.LOAD_FLAGS_BYPASS_CACHE ?? 1)
+                        : (Ci.nsIWebNavigation?.LOAD_FLAGS_NONE ?? 0);
+                    browser.webNavigation.reload(reloadFlags);
+                    reloadSuccessful = true;
+                } catch (err) {
+                    console.warn('QuickTabs: webNavigation.reload() failed:', err);
+                }
+            }
+            
+            // Method 2: Try browser.reload()
+            if (!reloadSuccessful && typeof browser.reload === 'function') {
+                try {
+                    browser.reload();
+                    reloadSuccessful = true;
+                } catch (err) {
+                    console.warn('QuickTabs: browser.reload() failed:', err);
+                }
+            }
+            
+            // Method 3: Try window location reload
+            if (!reloadSuccessful && browser.contentDocument?.defaultView?.location) {
+                try {
+                    browser.contentDocument.defaultView.location.reload();
+                    reloadSuccessful = true;
+                } catch (err) {
+                    console.warn('QuickTabs: location.reload() failed:', err);
+                }
+            }
+
+            // Method 4: Fallback to loadURI with current URL
+            if (!reloadSuccessful) {
+                try {
+                    const currentUrl = browser.currentURI?.spec || containerInfo.url;
+                    if (currentUrl) {
+                        loadContentInBrowser(browser, currentUrl);
+                        reloadSuccessful = true;
+                    }
+                } catch (err) {
+                    console.warn('QuickTabs: reload fallback failed:', err);
                 }
             }
         });
