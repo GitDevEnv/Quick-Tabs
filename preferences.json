@@ -37,6 +37,20 @@
     "default": true,
     "restart": true
   },
+  {
+    "type": "string",
+    "property": "extensions.quicktabs.borderRadius",
+    "label": "Frame border radius (pixels)",
+    "default": "8",
+    "restart": true
+  },
+  {
+    "type": "string",
+    "property": "extensions.quicktabs.buttonBorderRadius",
+    "label": "Buttons border radius (pixels)",
+    "default": "4",
+    "restart": true
+  },
 
   {
     "type": "separator",
