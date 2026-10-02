@@ -82,9 +82,11 @@ All settings can be configured through Sine's preferences panel:
 
 ### 📏 Size & Limits
 - **Max Containers**: Maximum number of Quick Tabs allowed (default: 5)
-- **Default Width**: Starting width for new containers (default: 400px)
-- **Default Height**: Starting height for new containers (default: 500px)
-- **Taskbar Min Width**: Minimum width for the taskbar (default: 200px)
+- **Default Width**: Starting width for new containers (default: 720px)
+- **Default Height**: Starting height for new containers (default: 900px)
+- **Taskbar Min Width**: Minimum width for the taskbar (default: 10px)
+- **Taskbar Height**: Height of the taskbar (default: 40px)
+- **Taskbar Border Radius**: Corner radius for the taskbar in pixels (default: 12px)
 
 ## Default Preferences
 
@@ -93,9 +95,11 @@ extensions.quicktabs.theme = "dark"
 extensions.quicktabs.taskbar.trigger = "hover" // or "click"
 extensions.quicktabs.context_menu.access_key = "T"
 extensions.quicktabs.maxContainers = 5
-extensions.quicktabs.defaultWidth = 400
-extensions.quicktabs.defaultHeight = 500
-extensions.quicktabs.taskbar.minWidth = 200
+extensions.quicktabs.defaultWidth = 720
+extensions.quicktabs.defaultHeight = 900
+extensions.quicktabs.taskbar.minWidth = 10
+extensions.quicktabs.taskbar.height = 40
+extensions.quicktabs.taskbar.borderRadius = 12
 extensions.quicktabs.animations.enabled = true
 extensions.quicktabs.initialPosition = "center" // e.g., "top-left", "bottom-right"
 extensions.quicktabs.commandpalette.dynamic.enabled = true

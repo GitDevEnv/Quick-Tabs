@@ -15,6 +15,8 @@
     const QUICK_TABS_INITIAL_POSITION_PREF = "extensions.quicktabs.initialPosition";
     const QUICK_TABS_BORDER_RADIUS_PREF = "extensions.quicktabs.borderRadius";
     const QUICK_TABS_BUTTON_BORDER_RADIUS_PREF = "extensions.quicktabs.buttonBorderRadius";
+    const QUICK_TABS_TASKBAR_HEIGHT_PREF = "extensions.quicktabs.taskbar.height";
+    const QUICK_TABS_TASKBAR_BORDER_RADIUS_PREF = "extensions.quicktabs.taskbar.borderRadius";
 
     // Configuration helper functions
     const getPref = (prefName, defaultValue = "") => {
@@ -70,11 +72,25 @@
         return isNaN(str) ? str : `${str}px`;
     };
 
-    const BORDER_RADIUS = parseRadius(getPref(QUICK_TABS_BORDER_RADIUS_PREF, "8"), 8);
+    const parseDimension = (val, defaultVal) => {
+        if (val === undefined || val === null || val === '') return defaultVal;
+        const num = parseInt(val, 10);
+        return isNaN(num) || num <= 0 ? defaultVal : num;
+    };
+
+    const BORDER_RADIUS = parseRadius(getPref(QUICK_TABS_BORDER_RADIUS_PREF, "12"), 12);
     const rawButtonRadius = getPref(QUICK_TABS_BUTTON_BORDER_RADIUS_PREF, "");
     const BUTTON_BORDER_RADIUS = rawButtonRadius !== "" 
-        ? parseRadius(rawButtonRadius, 4) 
+        ? parseRadius(rawButtonRadius, 12) 
         : parseRadius(Math.max(2, Math.round(parseFloat(BORDER_RADIUS) / 2)) || 4, 4);
+
+    const rawTaskbarRadius = getPref(QUICK_TABS_TASKBAR_BORDER_RADIUS_PREF, "") || getPref("extensions.quicktabs.taskbarBorderRadius", "");
+    const TASKBAR_BORDER_RADIUS = rawTaskbarRadius !== "" 
+        ? parseRadius(rawTaskbarRadius, 12) 
+        : BORDER_RADIUS;
+
+    const rawTaskbarHeight = getPref(QUICK_TABS_TASKBAR_HEIGHT_PREF, "") || getPref("extensions.quicktabs.taskbarHeight", "");
+    const TASKBAR_HEIGHT = parseDimension(rawTaskbarHeight, 40);
     
     // Global state
     let quickTabContainers = new Map(); // id -> container info
@@ -428,7 +444,7 @@
                 right: 10px;
                 background-color: ${currentTheme.taskbarBg};
                 border: 1px solid ${currentTheme.taskbarBorder};
-                border-radius: 6px;
+                border-radius: ${TASKBAR_BORDER_RADIUS};
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
                 z-index: 10001;
                 min-width: 110px;
@@ -440,22 +456,22 @@
             #quicktabs-taskbar.collapsed {
                 width: auto;
                 min-width: 110px;
-                height: 40px;
+                height: ${TASKBAR_HEIGHT}px;
             }
 
 
 
             #quicktabs-taskbar.expanded {
-                min-height: 40px;
+                min-height: ${TASKBAR_HEIGHT}px;
                 min-width: ${TASKBAR_MIN_WIDTH}px;
                 width: auto;
                 max-height: 300px;
             }
 
             .quicktabs-taskbar-toggle {
-                height: 40px;
+                height: ${TASKBAR_HEIGHT}px;
                 width: auto;
-                min-width: 40px;
+                min-width: ${Math.min(40, TASKBAR_HEIGHT)}px;
                 padding: 0 8px;
                 border: none;
                 background: none;
@@ -491,7 +507,7 @@
                 align-items: center;
                 gap: 8px;
                 padding: 6px 8px;
-                border-radius: 4px;
+                border-radius: ${BUTTON_BORDER_RADIUS};
                 cursor: pointer;
                 ${ANIMATIONS_ENABLED ? 'transition: transform 0.1s ease;' : ''}
                 min-width: 180px;
@@ -2047,6 +2063,10 @@
         console.log('  Max Containers:', MAX_CONTAINERS);
         console.log('  Default Size:', `${DEFAULT_WIDTH}x${DEFAULT_HEIGHT}`);
         console.log('  Taskbar Min Width:', TASKBAR_MIN_WIDTH);
+        console.log('  Taskbar Height:', TASKBAR_HEIGHT);
+        console.log('  Border Radius (Frame):', BORDER_RADIUS);
+        console.log('  Border Radius (Buttons):', BUTTON_BORDER_RADIUS);
+        console.log('  Border Radius (Taskbar):', TASKBAR_BORDER_RADIUS);
         console.log('  Animations Enabled:', ANIMATIONS_ENABLED);
         console.log('  Close Source Tab:', CLOSE_SOURCE_TAB);
         console.log('  Initial Position:', INITIAL_POSITION);

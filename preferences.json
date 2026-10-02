@@ -140,5 +140,19 @@
     "label": "Taskbar minimum width (pixels)",
     "defaultValue": "10",
     "restart": true
+  },
+  {
+    "type": "string",
+    "property": "extensions.quicktabs.taskbar.height",
+    "label": "Taskbar height (pixels)",
+    "defaultValue": "40",
+    "restart": true
+  },
+  {
+    "type": "string",
+    "property": "extensions.quicktabs.taskbar.borderRadius",
+    "label": "Taskbar border radius (pixels)",
+    "defaultValue": "12",
+    "restart": true
   }
 ] 
